@@ -1,5 +1,6 @@
 use iced::{window, Element, Subscription, Task};
 mod block_inspector;
+mod tabbed_pane_grid;
 
 mod settings;
 mod state;

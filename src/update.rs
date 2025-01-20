@@ -1,11 +1,11 @@
 use iced::{Size, Task};
 
-use super::{block_inspector, State};
+use super::{tabbed_pane_grid, State};
 
 #[derive(Debug)]
 pub enum Message {
     WindowResized(Size),
-    BlockInspector(block_inspector::Message),
+    Workspace(tabbed_pane_grid::Message),
 }
 
 impl State {
@@ -17,7 +17,7 @@ impl State {
 
                 Task::none()
             }
-            BlockInspector(m) => self.block_inspector.update(m).map(Message::BlockInspector),
+            Workspace(m) => self.workspace.update(m).map(Message::Workspace),
         }
     }
 }

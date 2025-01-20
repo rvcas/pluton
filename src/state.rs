@@ -1,7 +1,7 @@
-use crate::block_inspector;
+use crate::tabbed_pane_grid;
 
 #[derive(Default)]
 pub struct State {
     pub window_size: iced::Size,
-    pub block_inspector: block_inspector::State,
+    pub workspace: tabbed_pane_grid::State,
 }

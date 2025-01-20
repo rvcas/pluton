@@ -1,9 +1,9 @@
-use iced::{widget::column, Element};
+use iced::Element;
 
 use super::{Message, State};
 
 impl State {
     pub fn view(&self) -> Element<Message> {
-        column![self.block_inspector.view().map(Message::BlockInspector)].into()
+        self.workspace.view().map(Message::Workspace).into()
     }
 }
