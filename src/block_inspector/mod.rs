@@ -4,4 +4,3 @@ mod view;
 
 pub use state::*;
 pub use update::*;
-pub use view::*;
