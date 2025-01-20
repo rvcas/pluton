@@ -1,10 +1,9 @@
 use iced::{widget::text_editor, Size};
 
-use crate::MultiEraTx;
+use crate::block_inspector;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Message {
-    TxDecoded(Box<Option<MultiEraTx>>),
     WindowResized(Size),
-    TxCborChanged(text_editor::Action),
+    BlockInspector(block_inspector::Message),
 }

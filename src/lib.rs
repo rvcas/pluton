@@ -1,3 +1,4 @@
+mod block_inspector;
 mod message;
 pub mod settings;
 mod state;
