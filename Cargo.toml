@@ -9,6 +9,7 @@ iced = { version = "0.13.1", default-features = false, features = [
     "auto-detect-theme",
     "fira-sans",
     "wgpu",
+    "lazy",
 ] }
 pallas = "0.32.0"
 thiserror = "2.0.11"
