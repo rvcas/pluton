@@ -1,12 +1,11 @@
 use iced::{
-    alignment::Horizontal,
-    widget::{button, container, pane_grid, responsive, row, text, PaneGrid},
+    widget::{button, container, pane_grid, row, text, PaneGrid},
     Element,
     Length::Fill,
     Task,
 };
 
-use crate::block_inspector;
+use crate::{blake2b, block_inspector};
 
 pub struct State {
     focus: Option<pane_grid::Pane>,
@@ -42,7 +41,7 @@ impl Pane {
 enum Tool {
     Select,
     BlockInspector(block_inspector::State),
-    Blake2b,
+    Blake2b(blake2b::State),
 }
 
 #[expect(dead_code)] // We'll flesh out other tools soon
@@ -50,7 +49,7 @@ enum Tool {
 pub enum ToolMessage {
     Select(SelectMessage),
     BlockInspector(block_inspector::Message),
-    Blake2b,
+    Blake2b(blake2b::Message),
 }
 
 #[derive(Debug, Clone)]
@@ -147,6 +146,9 @@ impl State {
                                 pane_state.content =
                                     Tool::BlockInspector(block_inspector::State::default())
                             }
+                            ToolMessage::Select(SelectMessage::SelectBlake2b) => {
+                                pane_state.content = Tool::Blake2b(blake2b::State::default())
+                            }
                             _ => {}
                         },
                         Tool::BlockInspector(state) => {
@@ -158,7 +160,15 @@ impl State {
                                 // ??
                             }
                         }
-                        Tool::Blake2b => todo!(),
+                        Tool::Blake2b(state) => {
+                            if let ToolMessage::Blake2b(m) = message {
+                                return state.update(m).map(move |m| {
+                                    Message::Dispatch(pane, ToolMessage::Blake2b(m))
+                                });
+                            } else {
+                                // ??
+                            }
+                        }
                     }
                 }
             }
@@ -176,7 +186,7 @@ impl State {
             let title_text = match &pane.content {
                 Tool::Select => text("New..."),
                 Tool::BlockInspector(_) => text("Block Inspector"),
-                Tool::Blake2b => text("Blake2b"),
+                Tool::Blake2b(_) => text("Blake2b"),
             };
             let title = row![
                 pin_button,
@@ -265,7 +275,9 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
             .view()
             .map(move |m| Message::Dispatch(id, ToolMessage::BlockInspector(m)))
             .into(),
-        Tool::Blake2b => todo!(),
+        Tool::Blake2b(state) => state
+            .view()
+            .map(move |m| Message::Dispatch(id, ToolMessage::Blake2b(m))),
     }
 }
 

@@ -1,4 +1,5 @@
 use iced::{window, Element, Subscription, Task};
+mod blake2b;
 mod block_inspector;
 mod tabbed_pane_grid;
 
