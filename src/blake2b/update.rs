@@ -26,9 +26,15 @@ impl State {
     }
 
     fn update_hash(&mut self) {
+        if self.hex_contents.text().trim().len() == 0 {
+            return;
+        }
         let contents = match hex::decode(self.hex_contents.text().trim()) {
             Ok(h) => h,
-            Err(_) => return,
+            Err(_) => {
+                self.hash = "".to_string();
+                return;
+            }
         };
         self.hash = match self.hash_length {
             224 => hex::encode(Hasher::<224>::hash(&contents)),
