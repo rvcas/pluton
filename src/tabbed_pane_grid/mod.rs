@@ -36,7 +36,6 @@ impl Pane {
     }
 }
 
-#[expect(dead_code)] // We'll flesh out other tools soon
 #[derive(Debug)]
 enum Tool {
     Select,
@@ -44,7 +43,6 @@ enum Tool {
     Blake2b(blake2b::State),
 }
 
-#[expect(dead_code)] // We'll flesh out other tools soon
 #[derive(Debug, Clone)]
 pub enum ToolMessage {
     Select(SelectMessage),
