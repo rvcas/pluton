@@ -1,11 +1,12 @@
 use iced::{
-    widget::{button, container, pane_grid, row, text, PaneGrid},
-    Element,
+    widget::{button, column, container, pane_grid, row, text, PaneGrid, Space},
+    Center, Color, Element,
     Length::Fill,
-    Task,
+    Task, Theme,
 };
 
 use crate::{blake2b, block_inspector};
+use iced_font_awesome::fa_icon_solid;
 
 pub struct State {
     focus: Option<pane_grid::Pane>,
@@ -120,8 +121,12 @@ impl State {
                 self.panes.restore();
             }
             Message::Close(pane) => {
-                if let Some((_, sibling)) = self.panes.close(pane) {
-                    self.focus = Some(sibling);
+                if self.panes.len() == 1 {
+                    self.panes.get_mut(pane).unwrap().content = Tool::Select;
+                } else {
+                    if let Some((_, sibling)) = self.panes.close(pane) {
+                        self.focus = Some(sibling);
+                    }
                 }
             }
             Message::CloseFocused => {
@@ -178,23 +183,29 @@ impl State {
         let total_panes = self.panes.len();
 
         let pane_grid = PaneGrid::new(&self.panes, |id, pane, is_maximized| {
-            let pin_button = button(text(if pane.pinned { "Unpin" } else { "Pin" }).size(14))
-                .on_press(Message::TogglePin(id))
-                .padding(3);
+            let pin_button = button(
+                if pane.pinned {
+                    fa_icon_solid("thumbtack-slash")
+                } else {
+                    fa_icon_solid("thumbtack")
+                }
+                .size(14.),
+            )
+            .on_press(Message::TogglePin(id))
+            .padding(3);
             let title_text = match &pane.content {
-                Tool::Select => text("New..."),
+                Tool::Select => text(""),
                 Tool::BlockInspector(_) => text("Block Inspector"),
                 Tool::Blake2b(_) => text("Blake2b"),
             };
-            let title = row![
-                pin_button,
-                title_text, /*.color(if is_focused {
-                                PANE_ID_COLOR_FOCUSED
-                            } else {
-                                PANE_ID_COLOR_UNFOCUSED
-                            })*/
-            ]
-            .spacing(5);
+            let title = row![]
+                .push_maybe(if total_panes > 1 {
+                    Some(pin_button)
+                } else {
+                    None
+                })
+                .push_maybe(Some(title_text))
+                .spacing(5);
 
             let title_bar = pane_grid::TitleBar::new(title)
                 .controls(pane_grid::Controls::dynamic(
@@ -202,7 +213,7 @@ impl State {
                     button(text("X").size(14))
                         .style(button::danger)
                         .padding(3)
-                        .on_press_maybe(if total_panes > 1 && !pane.pinned {
+                        .on_press_maybe(if !pane.pinned {
                             Some(Message::Close(id))
                         } else {
                             None
@@ -229,41 +240,52 @@ impl State {
         .on_drag(Message::Dragged)
         .on_resize(10, Message::Resized);
 
-        container(pane_grid)
-            .width(Fill)
-            .height(Fill)
-            .padding(10)
-            .into()
+        column![
+            Space::new(Fill, 20),
+            container(pane_grid).width(Fill).height(Fill).padding(10)
+        ]
+        .into()
     }
 }
 
 fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message> {
-    match tool {
-        Tool::Select => container(row![
+    let tool_button =
+        |icon: &'static str, name: &'static str, event: SelectMessage| -> Element<_> {
             container(
-                button(text("Block Inspector").center().size(14))
-                    .style(button::secondary)
-                    .padding(3)
-                    .width(100)
-                    .height(100)
-                    .on_press(Message::Dispatch(
-                        id,
-                        ToolMessage::Select(SelectMessage::SelectBlockInspector),
-                    )),
-            )
-            .padding(5),
-            container(
-                button(text("Blake2b").center().size(14))
-                    .style(button::secondary)
-                    .padding(3)
-                    .width(100)
-                    .height(100)
-                    .on_press(Message::Dispatch(
-                        id,
-                        ToolMessage::Select(SelectMessage::SelectBlake2b),
-                    )),
+                button(
+                    row![column![
+                        fa_icon_solid(icon).color(Color::WHITE).size(50.),
+                        Space::new(Fill, 15),
+                        text(name).align_x(Center).size(14)
+                    ]
+                    .align_x(Center)
+                    .width(Fill)]
+                    .align_y(Center)
+                    .height(Fill),
+                )
+                .style(|theme: &Theme, status| {
+                    let mut defaults = button::secondary(theme, status);
+
+                    defaults.border.radius = 4.0.into();
+
+                    defaults
+                })
+                .padding(5)
+                .width(110)
+                .height(110)
+                .on_press(Message::Dispatch(id, ToolMessage::Select(event))),
             )
             .padding(5)
+            .into()
+        };
+    match tool {
+        Tool::Select => container(row![
+            tool_button(
+                "cube",
+                "Block Inspector",
+                SelectMessage::SelectBlockInspector
+            ),
+            tool_button("hashtag", "Blake2b", SelectMessage::SelectBlake2b),
         ])
         .center(Fill)
         .width(Fill)
@@ -287,13 +309,13 @@ fn view_controls<'a>(
 ) -> Element<'a, Message> {
     let row = row![].spacing(5).push_maybe(if total_panes > 1 {
         let (content, message) = if is_maximized {
-            ("Restore", Message::Restore)
+            (fa_icon_solid("minimize"), Message::Restore)
         } else {
-            ("Maximize", Message::Maximize(pane))
+            (fa_icon_solid("maximize"), Message::Maximize(pane))
         };
 
         Some(
-            button(text(content).size(14))
+            button(content.size(14.))
                 .style(button::secondary)
                 .padding(3)
                 .on_press(message),
@@ -302,17 +324,17 @@ fn view_controls<'a>(
         None
     });
 
-    let split_vertical = button(text("|").size(14))
+    let split_vertical = button(fa_icon_solid("grip-lines-vertical").size(14.))
         .padding(3)
         .on_press(Message::Split(pane_grid::Axis::Vertical, pane));
-    let split_horizontal = button(text("-").size(14))
+    let split_horizontal = button(fa_icon_solid("grip-lines").size(14.))
         .padding(3)
         .on_press(Message::Split(pane_grid::Axis::Horizontal, pane));
 
-    let close = button(text("X").size(14))
+    let close = button(fa_icon_solid("xmark").size(14.))
         .style(button::danger)
         .padding(3)
-        .on_press_maybe(if total_panes > 1 && !is_pinned {
+        .on_press_maybe(if !is_pinned {
             Some(Message::Close(pane))
         } else {
             None
