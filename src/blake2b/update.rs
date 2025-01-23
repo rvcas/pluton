@@ -1,4 +1,4 @@
-use iced::{widget::text_editor, Task};
+use iced::{clipboard, widget::text_editor, Task};
 use pallas::crypto::hash::Hasher;
 
 use super::State;
@@ -7,6 +7,7 @@ use super::State;
 pub enum Message {
     HexChanged(text_editor::Action),
     LengthChanged(usize),
+    CopyHash(String),
 }
 
 impl State {
@@ -22,6 +23,7 @@ impl State {
                 self.update_hash();
                 Task::none()
             }
+            Message::CopyHash(s) => clipboard::write(s.clone()),
         }
     }
 

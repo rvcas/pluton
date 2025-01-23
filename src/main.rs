@@ -1,6 +1,7 @@
 use iced::{window, Element, Subscription, Task};
 mod blake2b;
 mod block_inspector;
+mod copyable_text;
 mod tabbed_pane_grid;
 
 mod settings;

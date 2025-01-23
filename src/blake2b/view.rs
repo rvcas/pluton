@@ -6,13 +6,14 @@ use iced::{
 };
 
 use super::{Message, State};
+use crate::copyable_text::copyable_text;
 
 impl State {
     pub fn view(&self) -> Element<Message> {
         column![
             row![
                 "Hash: ",
-                text(&self.hash),
+                copyable_text(&self.hash, Message::CopyHash),
                 Space::new(Fill, Shrink),
                 "256",
                 toggler(self.hash_length == 256).on_toggle(|t| Message::LengthChanged(if t {
@@ -22,6 +23,7 @@ impl State {
                 })),
                 "224"
             ],
+            Space::new(Fill, 10),
             text_editor(&self.hex_contents)
                 .placeholder("hex contents...")
                 .on_action(Message::HexChanged)
