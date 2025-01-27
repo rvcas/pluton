@@ -44,6 +44,16 @@ pub enum Tool {
     Blake2b(blake2b::State),
 }
 
+impl Tool {
+    fn title(&self) -> &str {
+        match self {
+            Tool::Select => "Select",
+            Tool::BlockInspector(_) => "Block Inspector",
+            Tool::Blake2b(_) => "Blake2b",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ToolMessage {
     SelectTool(fn() -> Tool),
@@ -136,33 +146,22 @@ impl State {
             }
             Dispatch(pane, message) => {
                 let pane_state = self.panes.panes.get_mut(&pane);
-                if let Some(pane_state) = pane_state {
-                    match &mut pane_state.content {
-                        Tool::Select => match message {
-                            ToolMessage::SelectTool(content_fn) => {
-                                pane_state.content = content_fn();
-                            }
-                            _ => {}
-                        },
-                        Tool::BlockInspector(state) => {
-                            if let ToolMessage::BlockInspector(m) = message {
-                                return state.update(m).map(move |m| {
-                                    Message::Dispatch(pane, ToolMessage::BlockInspector(m))
-                                });
-                            } else {
-                                // ??
-                            }
-                        }
-                        Tool::Blake2b(state) => {
-                            if let ToolMessage::Blake2b(m) = message {
-                                return state.update(m).map(move |m| {
-                                    Message::Dispatch(pane, ToolMessage::Blake2b(m))
-                                });
-                            } else {
-                                // ??
-                            }
-                        }
+                if pane_state.is_none() {
+                    return Task::none();
+                }
+                let pane_state = pane_state.unwrap();
+                use ToolMessage::*;
+                match (&mut pane_state.content, message) {
+                    (Tool::Select, SelectTool(content_fn)) => {
+                        pane_state.content = content_fn();
                     }
+                    (Tool::BlockInspector(state), BlockInspector(message)) => {
+                        return state.update(message).map(dispatch(pane, BlockInspector));
+                    }
+                    (Tool::Blake2b(state), Blake2b(m)) => {
+                        return state.update(m).map(dispatch(pane, Blake2b));
+                    }
+                    _ => {}
                 }
             }
         };
@@ -183,11 +182,7 @@ impl State {
             )
             .on_press(Message::TogglePin(id))
             .padding(3);
-            let title_text = match &pane.content {
-                Tool::Select => text(""),
-                Tool::BlockInspector(_) => text("Block Inspector"),
-                Tool::Blake2b(_) => text("Blake2b"),
-            };
+            let title_text = text(pane.content.title());
             let title = row![]
                 .push_maybe(if total_panes > 1 {
                     Some(pin_button)
@@ -210,18 +205,8 @@ impl State {
                         }),
                 ))
                 .padding(10);
-            // .style(if is_focused {
-            //     style::title_bar_focused
-            // } else {
-            //     style::title_bar_active
-            // });
 
             pane_grid::Content::new(view_content(id, &pane.content)).title_bar(title_bar)
-            // .style(if is_focused {
-            //     style::pane_focused
-            // } else {
-            //     style::pane_active
-            // })
         })
         .width(Fill)
         .height(Fill)
@@ -236,6 +221,10 @@ impl State {
         ]
         .into()
     }
+}
+
+fn dispatch<M>(pane: pane_grid::Pane, ctor: fn(m: M) -> ToolMessage) -> impl Fn(M) -> Message {
+    move |m: M| -> Message { Message::Dispatch(pane, ctor(m)) }
 }
 
 fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message> {
@@ -267,6 +256,7 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
         .padding(5)
         .into()
     };
+    use ToolMessage::*;
     match tool {
         Tool::Select => container(row![
             tool_button("cube", "Block Inspector", || Tool::BlockInspector(
@@ -280,13 +270,8 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
         .width(Fill)
         .height(Fill)
         .into(),
-        Tool::BlockInspector(state) => state
-            .view()
-            .map(move |m| Message::Dispatch(id, ToolMessage::BlockInspector(m)))
-            .into(),
-        Tool::Blake2b(state) => state
-            .view()
-            .map(move |m| Message::Dispatch(id, ToolMessage::Blake2b(m))),
+        Tool::BlockInspector(state) => state.view().map(dispatch(id, BlockInspector)).into(),
+        Tool::Blake2b(state) => state.view().map(dispatch(id, Blake2b)),
     }
 }
 
