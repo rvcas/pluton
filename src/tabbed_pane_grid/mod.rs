@@ -38,7 +38,7 @@ impl Pane {
 }
 
 #[derive(Debug)]
-enum Tool {
+pub enum Tool {
     Select,
     BlockInspector(block_inspector::State),
     Blake2b(blake2b::State),
@@ -46,15 +46,9 @@ enum Tool {
 
 #[derive(Debug, Clone)]
 pub enum ToolMessage {
-    Select(SelectMessage),
+    SelectTool(fn() -> Tool),
     BlockInspector(block_inspector::Message),
     Blake2b(blake2b::Message),
-}
-
-#[derive(Debug, Clone)]
-pub enum SelectMessage {
-    SelectBlockInspector,
-    SelectBlake2b,
 }
 
 #[expect(dead_code)] // The remaining things can be bound to hotkeys eventually
@@ -145,12 +139,8 @@ impl State {
                 if let Some(pane_state) = pane_state {
                     match &mut pane_state.content {
                         Tool::Select => match message {
-                            ToolMessage::Select(SelectMessage::SelectBlockInspector) => {
-                                pane_state.content =
-                                    Tool::BlockInspector(block_inspector::State::default())
-                            }
-                            ToolMessage::Select(SelectMessage::SelectBlake2b) => {
-                                pane_state.content = Tool::Blake2b(blake2b::State::default())
+                            ToolMessage::SelectTool(content_fn) => {
+                                pane_state.content = content_fn();
                             }
                             _ => {}
                         },
@@ -249,43 +239,42 @@ impl State {
 }
 
 fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message> {
-    let tool_button =
-        |icon: &'static str, name: &'static str, event: SelectMessage| -> Element<_> {
-            container(
-                button(
-                    row![column![
-                        fa_icon_solid(icon).color(Color::WHITE).size(50.),
-                        Space::new(Fill, 15),
-                        text(name).align_x(Center).size(14)
-                    ]
-                    .align_x(Center)
-                    .width(Fill)]
-                    .align_y(Center)
-                    .height(Fill),
-                )
-                .style(|theme: &Theme, status| {
-                    let mut defaults = button::secondary(theme, status);
-
-                    defaults.border.radius = 4.0.into();
-
-                    defaults
-                })
-                .padding(5)
-                .width(110)
-                .height(110)
-                .on_press(Message::Dispatch(id, ToolMessage::Select(event))),
+    let tool_button = |icon: &'static str, name: &'static str, tool: fn() -> Tool| -> Element<_> {
+        container(
+            button(
+                row![column![
+                    fa_icon_solid(icon).color(Color::WHITE).size(50.),
+                    Space::new(Fill, 15),
+                    text(name).align_x(Center).size(14)
+                ]
+                .align_x(Center)
+                .width(Fill)]
+                .align_y(Center)
+                .height(Fill),
             )
+            .style(|theme: &Theme, status| {
+                let mut defaults = button::secondary(theme, status);
+
+                defaults.border.radius = 4.0.into();
+
+                defaults
+            })
             .padding(5)
-            .into()
-        };
+            .width(110)
+            .height(110)
+            .on_press(Message::Dispatch(id, ToolMessage::SelectTool(tool))),
+        )
+        .padding(5)
+        .into()
+    };
     match tool {
         Tool::Select => container(row![
-            tool_button(
-                "cube",
-                "Block Inspector",
-                SelectMessage::SelectBlockInspector
-            ),
-            tool_button("hashtag", "Blake2b", SelectMessage::SelectBlake2b),
+            tool_button("cube", "Block Inspector", || Tool::BlockInspector(
+                block_inspector::State::default()
+            )),
+            tool_button("hashtag", "Blake2b", || Tool::Blake2b(
+                blake2b::State::default()
+            )),
         ])
         .center(Fill)
         .width(Fill)
