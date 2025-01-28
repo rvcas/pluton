@@ -1,13 +1,15 @@
+use base64::{prelude::BASE64_STANDARD, Engine};
 use iced::{clipboard, widget::text_editor, Task};
 use pallas::crypto::hash::Hasher;
+use regex::Regex;
 use sha2::Digest;
 
-use super::State;
+use super::{Encoding, State};
 
 #[derive(Debug, Clone)]
 pub enum Message {
     ContentsChanged(text_editor::Action),
-    HexSet(bool),
+    EncodingSet(Encoding),
     CopyHash(String),
 }
 
@@ -16,15 +18,15 @@ impl State {
         use Message::*;
         match message {
             ContentsChanged(action) => {
+                self.warning = None;
                 self.contents.perform(action);
                 self.update_hashes();
-                self.warning = None;
                 Task::none()
             }
-            HexSet(is_hex) => {
-                self.is_hex = Some(is_hex);
-                self.update_hashes();
+            EncodingSet(enc) => {
                 self.warning = None;
+                self.encoding = Some(enc);
+                self.update_hashes();
                 Task::none()
             }
             CopyHash(s) => clipboard::write(s.clone()),
@@ -32,25 +34,33 @@ impl State {
     }
 
     fn update_hashes(&mut self) {
-        let mut hex_contents = self.contents.text().clone();
-        hex_contents.truncate(hex_contents.len() - 1);
-        if hex_contents.len() == 0 {
+        let contents = self.text();
+        if contents.len() == 0 {
             self.clear_hashes();
             self.warning = Some("Empty String".to_string());
             return;
         }
-        let contents = if self.is_hex.unwrap_or(looks_hex(&hex_contents)) {
-            match hex::decode(&hex_contents) {
-                Ok(h) => h,
-                Err(err) => {
-                    self.warning = Some(format!("Invalid hex: {}", err));
+
+        let contents = match self.encoding.clone().unwrap_or(detect_encoding(&contents)) {
+            Encoding::Hex => match hex::decode(&contents.replace('\n', "")) {
+                Ok(raw) => raw,
+                Err(e) => {
+                    self.warning = Some(format!("Invalid hex: {}", e.to_string()));
                     self.clear_hashes();
                     return;
                 }
-            }
-        } else {
-            hex_contents.into_bytes()
+            },
+            Encoding::Base64 => match BASE64_STANDARD.decode(&contents.replace('\n', "")) {
+                Ok(raw) => raw,
+                Err(e) => {
+                    self.warning = Some(format!("Invalid base64: {}", e.to_string()));
+                    self.clear_hashes();
+                    return;
+                }
+            },
+            Encoding::UTF8 => contents.into_bytes(),
         };
+
         self.blake2b_224 = hex::encode(Hasher::<224>::hash(&contents));
         self.blake2b_256 = hex::encode(Hasher::<256>::hash(&contents));
         let mut sha512 = sha2::Sha512::new();
@@ -69,8 +79,25 @@ impl State {
     }
 }
 
+pub fn detect_encoding(s: impl AsRef<str>) -> Encoding {
+    if looks_hex(&s) {
+        Encoding::Hex
+    } else if looks_base64(&s) {
+        Encoding::Base64
+    } else {
+        Encoding::UTF8
+    }
+}
+
+pub fn looks_base64(s: impl AsRef<str>) -> bool {
+    let s = s.as_ref().replace('\n', "");
+    Regex::new(r"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$")
+        .unwrap()
+        .is_match(&s)
+}
+
 pub fn looks_hex(s: impl AsRef<str>) -> bool {
-    let s = s.as_ref();
+    let s = s.as_ref().replace('\n', "");
     if s.len() % 2 != 0 {
         return false;
     }

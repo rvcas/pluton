@@ -3150,10 +3150,12 @@ checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 name = "pluton"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "hex",
  "iced",
  "iced_font_awesome",
  "pallas",
+ "regex",
  "sha2",
  "thiserror 2.0.11",
  "utxorpc",
