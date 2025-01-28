@@ -5,7 +5,7 @@ use iced::{
     Task, Theme,
 };
 
-use crate::{blake2b, block_inspector};
+use crate::{block_inspector, hashes};
 use iced_font_awesome::fa_icon_solid;
 
 pub struct State {
@@ -41,7 +41,7 @@ impl Pane {
 pub enum Tool {
     Select,
     BlockInspector(block_inspector::State),
-    Blake2b(blake2b::State),
+    Hashes(hashes::State),
 }
 
 impl Tool {
@@ -49,7 +49,7 @@ impl Tool {
         match self {
             Tool::Select => "Select",
             Tool::BlockInspector(_) => "Block Inspector",
-            Tool::Blake2b(_) => "Blake2b",
+            Tool::Hashes(_) => "Hashes",
         }
     }
 }
@@ -58,7 +58,7 @@ impl Tool {
 pub enum ToolMessage {
     SelectTool(fn() -> Tool),
     BlockInspector(block_inspector::Message),
-    Blake2b(blake2b::Message),
+    Hashes(hashes::Message),
 }
 
 #[expect(dead_code)] // The remaining things can be bound to hotkeys eventually
@@ -158,8 +158,8 @@ impl State {
                     (Tool::BlockInspector(state), BlockInspector(message)) => {
                         return state.update(message).map(dispatch(pane, BlockInspector));
                     }
-                    (Tool::Blake2b(state), Blake2b(m)) => {
-                        return state.update(m).map(dispatch(pane, Blake2b));
+                    (Tool::Hashes(state), Hashes(m)) => {
+                        return state.update(m).map(dispatch(pane, Hashes));
                     }
                     _ => {}
                 }
@@ -262,8 +262,8 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
             tool_button("cube", "Block Inspector", || Tool::BlockInspector(
                 block_inspector::State::default()
             )),
-            tool_button("hashtag", "Blake2b", || Tool::Blake2b(
-                blake2b::State::default()
+            tool_button("hashtag", "Hashes", || Tool::Hashes(
+                hashes::State::default()
             )),
         ])
         .center(Fill)
@@ -271,7 +271,7 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
         .height(Fill)
         .into(),
         Tool::BlockInspector(state) => state.view().map(dispatch(id, BlockInspector)).into(),
-        Tool::Blake2b(state) => state.view().map(dispatch(id, Blake2b)),
+        Tool::Hashes(state) => state.view().map(dispatch(id, Hashes)),
     }
 }
 
