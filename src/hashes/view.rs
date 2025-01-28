@@ -1,27 +1,26 @@
 use iced::{
-    widget::{column, row, text, text_editor, toggler, Space},
+    widget::{column, pick_list, row, text, text_editor, Space},
     Element,
     Length::{Fill, FillPortion, Shrink},
     Theme,
 };
 
-use super::{looks_hex, Message, State};
+use super::{detect_encoding, Encoding, Message, State};
 use crate::copyable_text::copyable_text;
 
 impl State {
     pub fn view(&self) -> Element<Message> {
+        let contents = self.text();
         row![
             column![
                 row![
-                    "Hex?",
+                    "Encoding?",
                     Space::new(10, Fill),
-                    toggler(self.is_hex.unwrap_or(looks_hex(self.contents.text())))
-                        .on_toggle(Message::HexSet),
-                    if looks_hex(self.contents.text()) {
-                        "Yes"
-                    } else {
-                        "No"
-                    }
+                    pick_list(
+                        &Encoding::ALL[..],
+                        Some(self.encoding.clone().unwrap_or(detect_encoding(contents))),
+                        Message::EncodingSet,
+                    )
                 ]
                 .height(Shrink),
                 text_editor(&self.contents)
@@ -56,7 +55,7 @@ impl State {
             .push_maybe(
                 self.warning
                     .as_ref()
-                    .map(|warning| { text(warning).color([1.0, 0.0, 0.0]) })
+                    .map(|warning| text(warning).color([1.0, 0.0, 0.0]))
             )
             .padding(5)
             .width(FillPortion(3))
