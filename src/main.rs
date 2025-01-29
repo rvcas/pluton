@@ -2,6 +2,7 @@ mod block_inspector;
 mod copyable_text;
 mod hashes;
 mod tabbed_pane_grid;
+mod watch;
 
 mod settings;
 mod state;
