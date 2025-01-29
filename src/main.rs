@@ -1,4 +1,3 @@
-use iced::{window, Element, Subscription, Task};
 mod block_inspector;
 mod copyable_text;
 mod hashes;
@@ -6,6 +5,7 @@ mod tabbed_pane_grid;
 
 mod settings;
 mod state;
+mod subscription;
 mod update;
 mod view;
 
@@ -14,23 +14,13 @@ use state::*;
 use update::*;
 
 fn main() -> iced::Result {
-    iced::application("", update, view)
+    iced::application("", State::update, State::view)
         .theme(theme)
-        .subscription(subscription)
+        .subscription(State::subscription)
         .window(window())
         .run()
 }
 
-fn update(state: &mut State, message: Message) -> Task<Message> {
-    state.update(message)
-}
-
-fn view(state: &State) -> Element<Message> {
-    state.view()
-}
 fn theme(_state: &State) -> iced::Theme {
     iced::Theme::CatppuccinMocha
-}
-fn subscription(_state: &State) -> Subscription<Message> {
-    window::resize_events().map(|(_id, size)| Message::WindowResized(size))
 }
