@@ -127,10 +127,8 @@ impl State {
             Message::Close(pane) => {
                 if self.panes.len() == 1 {
                     self.panes.get_mut(pane).unwrap().content = Tool::Select;
-                } else {
-                    if let Some((_, sibling)) = self.panes.close(pane) {
-                        self.focus = Some(sibling);
-                    }
+                } else if let Some((_, sibling)) = self.panes.close(pane) {
+                    self.focus = Some(sibling);
                 }
             }
             Message::CloseFocused => {
@@ -227,7 +225,7 @@ fn dispatch<M>(pane: pane_grid::Pane, ctor: fn(m: M) -> ToolMessage) -> impl Fn(
     move |m: M| -> Message { Message::Dispatch(pane, ctor(m)) }
 }
 
-fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message> {
+fn view_content(id: pane_grid::Pane, tool: &Tool) -> Element<'_, Message> {
     let tool_button = |icon: &'static str, name: &'static str, tool: fn() -> Tool| -> Element<_> {
         container(
             button(
@@ -270,7 +268,7 @@ fn view_content<'a>(id: pane_grid::Pane, tool: &'a Tool) -> Element<'a, Message>
         .width(Fill)
         .height(Fill)
         .into(),
-        Tool::BlockInspector(state) => state.view().map(dispatch(id, BlockInspector)).into(),
+        Tool::BlockInspector(state) => state.view().map(dispatch(id, BlockInspector)),
         Tool::Hashes(state) => state.view().map(dispatch(id, Hashes)),
     }
 }
