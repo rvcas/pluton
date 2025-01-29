@@ -81,6 +81,7 @@ pub enum Message {
 impl State {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         use Message::*;
+
         match message {
             Message::Split(axis, pane) => {
                 let result = self.panes.split(axis, pane, Pane::new(Tool::Select));
@@ -143,12 +144,16 @@ impl State {
                 }
             }
             Dispatch(pane, message) => {
+                use ToolMessage::*;
+
                 let pane_state = self.panes.panes.get_mut(&pane);
+
                 if pane_state.is_none() {
                     return Task::none();
                 }
+
                 let pane_state = pane_state.unwrap();
-                use ToolMessage::*;
+
                 match (&mut pane_state.content, message) {
                     (Tool::Select, SelectTool(content_fn)) => {
                         pane_state.content = content_fn();
@@ -180,7 +185,9 @@ impl State {
             )
             .on_press(Message::TogglePin(id))
             .padding(3);
+
             let title_text = text(pane.content.title());
+
             let title = row![]
                 .push_maybe(if total_panes > 1 {
                     Some(pin_button)
@@ -226,6 +233,8 @@ fn dispatch<M>(pane: pane_grid::Pane, ctor: fn(m: M) -> ToolMessage) -> impl Fn(
 }
 
 fn view_content(id: pane_grid::Pane, tool: &Tool) -> Element<'_, Message> {
+    use ToolMessage::*;
+
     let tool_button = |icon: &'static str, name: &'static str, tool: fn() -> Tool| -> Element<_> {
         container(
             button(
@@ -254,15 +263,20 @@ fn view_content(id: pane_grid::Pane, tool: &Tool) -> Element<'_, Message> {
         .padding(5)
         .into()
     };
-    use ToolMessage::*;
+
     match tool {
-        Tool::Select => container(row![
-            tool_button("cube", "Block Inspector", || Tool::BlockInspector(
-                block_inspector::State::default()
-            )),
-            tool_button("hashtag", "Hashes", || Tool::Hashes(
-                hashes::State::default()
-            )),
+        Tool::Select => container(column![
+            row![
+                tool_button("cube", "Block Inspector", || Tool::BlockInspector(
+                    block_inspector::State::default()
+                )),
+                tool_button("hashtag", "Hashes", || Tool::Hashes(
+                    hashes::State::default()
+                )),
+            ],
+            row![tool_button("eye", "Watch", || {
+                Tool::BlockInspector(block_inspector::State::default())
+            })]
         ])
         .center(Fill)
         .width(Fill)
