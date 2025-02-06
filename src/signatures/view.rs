@@ -1,5 +1,5 @@
 use iced::{
-    widget::{column, pick_list, row, text, text_editor, Space},
+    widget::{button, column, pick_list, row, text, text_editor, Space},
     Element,
     Length::{Fill, FillPortion, Shrink},
     Theme,
@@ -62,18 +62,29 @@ impl State {
 
                         defaults
                     }),
+                button("Generate Key").on_press(Message::GenerateKey),
             ]
             .width(FillPortion(1))
             .padding(5),
             column![
                 row![
-                    "Edd25519: ",
-                    copyable_text(&self.edd25519, Message::CopyHash)
+                    "Ed25519 Pub: ",
+                    copyable_text(&self.ed25519_pub, Message::CopyHash)
                 ]
                 .wrap(),
                 row![
-                    "EcdsaSecp256k1: ",
-                    copyable_text(&self.ecdsa_secp256k1, Message::CopyHash)
+                    "Ed25519 Sig: ",
+                    copyable_text(&self.ed25519_sig, Message::CopyHash)
+                ]
+                .wrap(),
+                row![
+                    "EcdsaSecp256k1 Pub: ",
+                    copyable_text(&self.ecdsa_secp256k1_pub, Message::CopyHash)
+                ]
+                .wrap(),
+                row![
+                    "EcdsaSecp256k1 Sig: ",
+                    copyable_text(&self.ecdsa_secp256k1_sig, Message::CopyHash)
                 ]
                 .wrap(),
                 row![

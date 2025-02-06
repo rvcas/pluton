@@ -1,6 +1,7 @@
 use base64::{prelude::BASE64_STANDARD, Engine};
-use cryptoxide::ed25519::SIGNATURE_LENGTH;
+use cryptoxide::ed25519;
 use iced::{clipboard, widget::text_editor, Task};
+use secp256k1::rand::rngs::OsRng;
 
 use crate::encoding::{detect_encoding, Encoding};
 
@@ -10,6 +11,7 @@ use super::state::State;
 pub enum Message {
     ContentsChanged(text_editor::Action),
     KeyChanged(text_editor::Action),
+    GenerateKey,
     EncodingSet(Encoding),
     CopyHash(String),
 }
@@ -38,6 +40,16 @@ impl State {
                 Task::none()
             }
             CopyHash(s) => clipboard::write(s.clone()),
+            GenerateKey => {
+                let mut rng = OsRng;
+                let sk = secp256k1::Secp256k1::new();
+                let x = sk.generate_keypair(&mut rng).0.secret_bytes();
+
+                self.warning = None;
+                self.private_key = text_editor::Content::with_text(&hex::encode(x));
+                self.update_signatures();
+                Task::none()
+            }
         }
     }
 
@@ -95,31 +107,38 @@ impl State {
             Encoding::UTF8 => private_key.into_bytes(),
         };
 
-        match sign_with_edd25519(private_key, message) {
-            Ok(sig) => {
-                self.edd25519 = hex::encode(sig);
+        match sign_with_edd25519(private_key.clone(), message.clone()) {
+            Ok((pub_key, sig)) => {
+                self.ed25519_pub = hex::encode(pub_key);
+                self.ed25519_sig = hex::encode(sig);
             }
-            Err(warn) => self.warning = Some(warn),
+            Err(warn) => {
+                self.warning = Some(warn);
+                self.ed25519_pub = "".to_string();
+                self.ed25519_sig = "".to_string();
+                return;
+            }
         }
 
-        // self.blake2b_256 = hex::encode(Hasher::<256>::hash(&contents));
-
-        // let mut sha512 = sha2::Sha512::new();
-
-        // sha512.update(&contents);
-
-        // self.sha512 = hex::encode(sha512.finalize());
-
-        // let mut sha256 = sha2::Sha256::new();
-
-        // sha256.update(&contents);
-
-        // self.sha256 = hex::encode(sha256.finalize());
+        match sign_with_ecdsa_secp256k1(private_key, message) {
+            Ok((pub_key, sig)) => {
+                self.ecdsa_secp256k1_pub = hex::encode(pub_key);
+                self.ecdsa_secp256k1_sig = hex::encode(sig);
+            }
+            Err(warn) => {
+                self.warning = Some(warn);
+                self.ecdsa_secp256k1_pub = "".to_string();
+                self.ecdsa_secp256k1_sig = "".to_string();
+                return;
+            }
+        }
     }
 
     fn clear_signatures(&mut self) {
-        self.edd25519 = "".to_string();
-        self.ecdsa_secp256k1 = "".to_string();
+        self.ed25519_pub = "".to_string();
+        self.ed25519_sig = "".to_string();
+        self.ecdsa_secp256k1_pub = "".to_string();
+        self.ecdsa_secp256k1_sig = "".to_string();
         self.schnorr_secp256k1 = "".to_string();
     }
 }
@@ -127,24 +146,63 @@ impl State {
 fn sign_with_edd25519(
     private_key: Vec<u8>,
     message: Vec<u8>,
-) -> Result<[u8; SIGNATURE_LENGTH], String> {
-    use cryptoxide::ed25519;
-
+) -> Result<
+    (
+        [u8; ed25519::PUBLIC_KEY_LENGTH],
+        [u8; ed25519::SIGNATURE_LENGTH],
+    ),
+    String,
+> {
     let private_key = &private_key
         .try_into()
         .map_err(|_| "Invalid private key length..".to_string())?;
 
-    let keypair = ed25519::keypair(private_key);
+    let (private_key, public_key) = ed25519::keypair(private_key);
 
-    let sig = ed25519::signature(&message, &keypair.0);
-
-    let public_key: [u8; 32] = keypair.1;
+    let sig = ed25519::signature(&message, &private_key);
 
     let valid = ed25519::verify(&message, &public_key, &sig);
 
     if valid {
-        Ok(sig)
+        Ok((public_key, sig))
     } else {
         Err("Something went horribly wrong. Sig did not verify with same message.".to_string())
     }
+}
+
+fn sign_with_ecdsa_secp256k1(
+    private_key: Vec<u8>,
+    message: Vec<u8>,
+) -> Result<
+    (
+        [u8; secp256k1::constants::PUBLIC_KEY_SIZE],
+        [u8; secp256k1::constants::COMPACT_SIGNATURE_SIZE],
+    ),
+    String,
+> {
+    let private_key = &private_key
+        .try_into()
+        .map_err(|_| "Invalid private key length..".to_string())?;
+
+    let private_key = secp256k1::SecretKey::from_byte_array(private_key)
+        .map_err(|_| "Invalid secp256k1 private key..".to_string())?;
+
+    let ecdsa_signer = secp256k1::Secp256k1::new();
+
+    let pub_key = private_key.public_key(&ecdsa_signer);
+
+    let message: [u8; 32] = message
+        .try_into()
+        .map_err(|_| "Invalid secp256k1 message length..".to_string())?;
+
+    let message = secp256k1::Message::from_digest(message);
+
+    let sig = ecdsa_signer.sign_ecdsa(&message, &private_key);
+
+    ecdsa_signer
+        .verify_ecdsa(&message, &sig, &pub_key)
+        .map(|_| (pub_key.serialize(), sig.serialize_compact()))
+        .map_err(|_| {
+            "Something went horribly wrong. Sig did not verify with same message.".to_string()
+        })
 }

@@ -8,8 +8,10 @@ pub struct State {
     pub private_key: text_editor::Content,
     pub encoding: Option<Encoding>,
     pub warning: Option<String>,
-    pub edd25519: String,
-    pub ecdsa_secp256k1: String,
+    pub ed25519_pub: String,
+    pub ed25519_sig: String,
+    pub ecdsa_secp256k1_pub: String,
+    pub ecdsa_secp256k1_sig: String,
     pub schnorr_secp256k1: String,
 }
 
@@ -49,8 +51,10 @@ impl Default for State {
             private_key: text_editor::Content::default(),
             encoding: None,
             warning: None,
-            edd25519: "".to_string(),
-            ecdsa_secp256k1: "".to_string(),
+            ed25519_pub: "".to_string(),
+            ed25519_sig: "".to_string(),
+            ecdsa_secp256k1_pub: "".to_string(),
+            ecdsa_secp256k1_sig: "".to_string(),
             schnorr_secp256k1: "".to_string(),
         }
     }
