@@ -5,7 +5,7 @@ use iced::{
     Task, Theme,
 };
 
-use crate::{block_inspector, hashes};
+use crate::{block_inspector, hashes, signatures};
 use iced_font_awesome::fa_icon_solid;
 
 pub struct State {
@@ -42,6 +42,7 @@ pub enum Tool {
     Select,
     BlockInspector(block_inspector::State),
     Hashes(hashes::State),
+    Signatures(signatures::State),
 }
 
 impl Tool {
@@ -50,6 +51,7 @@ impl Tool {
             Tool::Select => "Select",
             Tool::BlockInspector(_) => "Block Inspector",
             Tool::Hashes(_) => "Hashes",
+            Tool::Signatures(_) => "Signatures",
         }
     }
 }
@@ -59,6 +61,7 @@ pub enum ToolMessage {
     SelectTool(fn() -> Tool),
     BlockInspector(block_inspector::Message),
     Hashes(hashes::Message),
+    Signatures(signatures::Message),
 }
 
 #[expect(dead_code)] // The remaining things can be bound to hotkeys eventually
@@ -158,6 +161,10 @@ impl State {
                     }
                     (Tool::Hashes(state), Hashes(m)) => {
                         return state.update(m).map(dispatch(pane, Hashes));
+                    }
+
+                    (Tool::Signatures(state), Signatures(message)) => {
+                        return state.update(message).map(dispatch(pane, Signatures));
                     }
                     _ => {}
                 }
@@ -263,6 +270,9 @@ fn view_content(id: pane_grid::Pane, tool: &Tool) -> Element<'_, Message> {
             tool_button("hashtag", "Hashes", || Tool::Hashes(
                 hashes::State::default()
             )),
+            tool_button("sign", "Signatures", || Tool::Signatures(
+                signatures::State::default()
+            ))
         ])
         .center(Fill)
         .width(Fill)
@@ -270,6 +280,7 @@ fn view_content(id: pane_grid::Pane, tool: &Tool) -> Element<'_, Message> {
         .into(),
         Tool::BlockInspector(state) => state.view().map(dispatch(id, BlockInspector)),
         Tool::Hashes(state) => state.view().map(dispatch(id, Hashes)),
+        Tool::Signatures(state) => state.view().map(dispatch(id, Signatures)),
     }
 }
 

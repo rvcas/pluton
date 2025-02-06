@@ -1,10 +1,12 @@
 use base64::{prelude::BASE64_STANDARD, Engine};
 use iced::{clipboard, widget::text_editor, Task};
 use pallas::crypto::hash::Hasher;
-use regex::Regex;
+
 use sha2::Digest;
 
-use super::{Encoding, State};
+use crate::encoding::{detect_encoding, Encoding};
+
+use super::State;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -84,34 +86,4 @@ impl State {
         self.sha512 = "".to_string();
         self.sha256 = "".to_string();
     }
-}
-
-pub fn detect_encoding(s: impl AsRef<str>) -> Encoding {
-    if looks_hex(&s) {
-        Encoding::Hex
-    } else if looks_base64(&s) {
-        Encoding::Base64
-    } else {
-        Encoding::UTF8
-    }
-}
-
-pub fn looks_base64(s: impl AsRef<str>) -> bool {
-    let s = s.as_ref().replace('\n', "");
-    Regex::new(r"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$")
-        .unwrap()
-        .is_match(&s)
-}
-
-pub fn looks_hex(s: impl AsRef<str>) -> bool {
-    let s = s.as_ref().replace('\n', "");
-    if s.len() % 2 != 0 {
-        return false;
-    }
-    for c in s.chars() {
-        if !c.is_ascii_hexdigit() {
-            return false;
-        }
-    }
-    true
 }

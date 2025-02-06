@@ -1,31 +1,6 @@
-use std::fmt::Display;
-
 use iced::widget::text_editor;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Encoding {
-    UTF8,
-    Hex,
-    Base64,
-}
-
-impl Encoding {
-    pub const ALL: [Encoding; 3] = [Encoding::Hex, Encoding::Base64, Encoding::UTF8];
-}
-
-impl Display for Encoding {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Encoding::UTF8 => "UTF8",
-                Encoding::Hex => "Hex",
-                Encoding::Base64 => "Base64",
-            }
-        )
-    }
-}
+use crate::encoding::Encoding;
 
 #[derive(Debug)]
 pub struct State {

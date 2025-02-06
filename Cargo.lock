@@ -914,6 +914,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "382ce8820a5bb815055d3553a610e8cb542b2d767bbacea99038afda96cd760d"
 
 [[package]]
+name = "cryptoxide"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce7f6a845f6fa1e17ebbdcc7247a79e5cde65c6a0b682e6f1e1aebeff04dd1cc"
+
+[[package]]
 name = "ctor-lite"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1117,7 +1123,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb588f93c0d91b2f668849fd6d030cddb0b2e31f105963be189da5acdf492a21"
 dependencies = [
- "cryptoxide",
+ "cryptoxide 0.4.4",
 ]
 
 [[package]]
@@ -2798,7 +2804,7 @@ dependencies = [
  "base58",
  "bech32",
  "crc",
- "cryptoxide",
+ "cryptoxide 0.4.4",
  "hex",
  "pallas-codec",
  "pallas-crypto",
@@ -2857,7 +2863,7 @@ version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37c1d642326ce402eb9191aeacc3dd0bf2b499848e97a56396c978a6eb9dd31a"
 dependencies = [
- "cryptoxide",
+ "cryptoxide 0.4.4",
  "hex",
  "pallas-codec",
  "rand_core",
@@ -2958,7 +2964,7 @@ checksum = "812859b4571cb53182d34094ae3ec391a25d50b0c586be5876d4d86e4eb124bc"
 dependencies = [
  "bech32",
  "bip39",
- "cryptoxide",
+ "cryptoxide 0.4.4",
  "ed25519-bip32",
  "pallas-crypto",
  "rand",
@@ -3151,6 +3157,7 @@ name = "pluton"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "cryptoxide 0.5.0",
  "hex",
  "iced",
  "iced_font_awesome",

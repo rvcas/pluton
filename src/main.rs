@@ -1,8 +1,10 @@
 mod block_inspector;
 mod copyable_text;
 mod hashes;
+mod signatures;
 mod tabbed_pane_grid;
 
+mod encoding;
 mod settings;
 mod state;
 mod subscription;

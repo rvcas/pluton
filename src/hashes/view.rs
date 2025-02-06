@@ -5,8 +5,11 @@ use iced::{
     Theme,
 };
 
-use super::{detect_encoding, Encoding, Message, State};
-use crate::copyable_text::copyable_text;
+use super::{Message, State};
+use crate::{
+    copyable_text::copyable_text,
+    encoding::{detect_encoding, Encoding},
+};
 
 impl State {
     pub fn view(&self) -> Element<Message> {
