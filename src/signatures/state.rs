@@ -12,7 +12,8 @@ pub struct State {
     pub ed25519_sig: String,
     pub ecdsa_secp256k1_pub: String,
     pub ecdsa_secp256k1_sig: String,
-    pub schnorr_secp256k1: String,
+    pub schnorr_secp256k1_pub: String,
+    pub schnorr_secp256k1_sig: String,
 }
 
 impl State {
@@ -55,7 +56,8 @@ impl Default for State {
             ed25519_sig: "".to_string(),
             ecdsa_secp256k1_pub: "".to_string(),
             ecdsa_secp256k1_sig: "".to_string(),
-            schnorr_secp256k1: "".to_string(),
+            schnorr_secp256k1_pub: "".to_string(),
+            schnorr_secp256k1_sig: "".to_string(),
         }
     }
 }

@@ -1,5 +1,5 @@
 use base64::{prelude::BASE64_STANDARD, Engine};
-use cryptoxide::ed25519;
+use cryptoxide::ed25519::{self};
 use iced::{clipboard, widget::text_editor, Task};
 use secp256k1::rand::rngs::OsRng;
 
@@ -13,7 +13,7 @@ pub enum Message {
     KeyChanged(text_editor::Action),
     GenerateKey,
     EncodingSet(Encoding),
-    CopyHash(String),
+    CopyText(String),
 }
 
 impl State {
@@ -39,7 +39,7 @@ impl State {
                 self.update_signatures();
                 Task::none()
             }
-            CopyHash(s) => clipboard::write(s.clone()),
+            CopyText(s) => clipboard::write(s.clone()),
             GenerateKey => {
                 let mut rng = OsRng;
                 let sk = secp256k1::Secp256k1::new();
@@ -120,7 +120,7 @@ impl State {
             }
         }
 
-        match sign_with_ecdsa_secp256k1(private_key, message) {
+        match sign_with_ecdsa_secp256k1(private_key.clone(), message.clone()) {
             Ok((pub_key, sig)) => {
                 self.ecdsa_secp256k1_pub = hex::encode(pub_key);
                 self.ecdsa_secp256k1_sig = hex::encode(sig);
@@ -132,6 +132,19 @@ impl State {
                 return;
             }
         }
+
+        match sign_with_schnorr_secp256k1(private_key, message) {
+            Ok((pub_key, sig)) => {
+                self.schnorr_secp256k1_pub = hex::encode(pub_key);
+                self.schnorr_secp256k1_sig = hex::encode(sig);
+            }
+            Err(warn) => {
+                self.warning = Some(warn);
+                self.schnorr_secp256k1_pub = "".to_string();
+                self.schnorr_secp256k1_sig = "".to_string();
+                return;
+            }
+        }
     }
 
     fn clear_signatures(&mut self) {
@@ -139,7 +152,8 @@ impl State {
         self.ed25519_sig = "".to_string();
         self.ecdsa_secp256k1_pub = "".to_string();
         self.ecdsa_secp256k1_sig = "".to_string();
-        self.schnorr_secp256k1 = "".to_string();
+        self.schnorr_secp256k1_pub = "".to_string();
+        self.schnorr_secp256k1_sig = "".to_string();
     }
 }
 
@@ -202,6 +216,41 @@ fn sign_with_ecdsa_secp256k1(
     ecdsa_signer
         .verify_ecdsa(&message, &sig, &pub_key)
         .map(|_| (pub_key.serialize(), sig.serialize_compact()))
+        .map_err(|_| {
+            "Something went horribly wrong. Sig did not verify with same message.".to_string()
+        })
+}
+
+fn sign_with_schnorr_secp256k1(
+    private_key: Vec<u8>,
+    message: Vec<u8>,
+) -> Result<
+    (
+        [u8; secp256k1::constants::SCHNORR_PUBLIC_KEY_SIZE],
+        [u8; secp256k1::constants::SCHNORR_SIGNATURE_SIZE],
+    ),
+    String,
+> {
+    let private_key: &[u8; secp256k1::constants::SECRET_KEY_SIZE] = &private_key
+        .try_into()
+        .map_err(|_| "Invalid private key length..".to_string())?;
+
+    let schnorr_signer = secp256k1::Secp256k1::new();
+
+    let keypair = secp256k1::Keypair::from_seckey_slice(&schnorr_signer, private_key)
+        .map_err(|_| "Invalid secp256k1 private key..".to_string())?;
+
+    let pub_key = keypair.x_only_public_key().0;
+
+    let message: [u8; 32] = message
+        .try_into()
+        .map_err(|_| "Invalid secp256k1 message length..".to_string())?;
+
+    let sig = schnorr_signer.sign_schnorr(&message, &keypair);
+
+    schnorr_signer
+        .verify_schnorr(&sig, &message, &pub_key)
+        .map(|_| (pub_key.serialize(), sig.to_byte_array()))
         .map_err(|_| {
             "Something went horribly wrong. Sig did not verify with same message.".to_string()
         })

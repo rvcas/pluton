@@ -69,27 +69,32 @@ impl State {
             column![
                 row![
                     "Ed25519 Pub: ",
-                    copyable_text(&self.ed25519_pub, Message::CopyHash)
+                    copyable_text(&self.ed25519_pub, Message::CopyText)
                 ]
                 .wrap(),
                 row![
                     "Ed25519 Sig: ",
-                    copyable_text(&self.ed25519_sig, Message::CopyHash)
+                    copyable_text(&self.ed25519_sig, Message::CopyText)
                 ]
                 .wrap(),
                 row![
                     "EcdsaSecp256k1 Pub: ",
-                    copyable_text(&self.ecdsa_secp256k1_pub, Message::CopyHash)
+                    copyable_text(&self.ecdsa_secp256k1_pub, Message::CopyText)
                 ]
                 .wrap(),
                 row![
                     "EcdsaSecp256k1 Sig: ",
-                    copyable_text(&self.ecdsa_secp256k1_sig, Message::CopyHash)
+                    copyable_text(&self.ecdsa_secp256k1_sig, Message::CopyText)
                 ]
                 .wrap(),
                 row![
-                    "SchnorrSecp256k1: ",
-                    copyable_text(&self.schnorr_secp256k1, Message::CopyHash)
+                    "SchnorrSecp256k1 Pub: ",
+                    copyable_text(&self.schnorr_secp256k1_pub, Message::CopyText)
+                ]
+                .wrap(),
+                row![
+                    "SchnorrSecp256k1 Sig: ",
+                    copyable_text(&self.schnorr_secp256k1_sig, Message::CopyText)
                 ]
                 .wrap(),
             ]
